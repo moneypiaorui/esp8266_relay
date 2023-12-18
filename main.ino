@@ -1,5 +1,6 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
+#include "esp_http_server.h"
 #include <PubSubClient.h>
 const int D0 = 16;
 const int D1 = 5;//亮度暗
@@ -20,6 +21,8 @@ const char* topic2 = "d1mini/state";
 char* state = "OFF";
 
 String wifi_config_file = "/wifiConfig.txt";
+
+WebSocketsServer webSocketServer(81);
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -55,14 +58,18 @@ void setup() {
   Serial.println("WiFi connected");
   Serial.println(WiFi.localIP());
 
-  server.on("/WIFIconfig", handleWIFI);
+  server.on("/WIFIconfig", handleWIFI(atoi(server.arg("time").c_str())));
   server.on("/type", TYPE);
   server.onNotFound(handleUserRequet); //处理没有匹配的处理程序的url
   server.begin();
   Serial.println("HTTP server started");
+  
   //设置MATT服务
-  client.setServer(mqttServer, mqttPort);
-  client.setCallback(callback);
+//  client.setServer(mqttServer, mqttPort);
+//  client.setCallback(callback);
+
+  webSocketServer.begin();
+  webSocketServer.onEvent(webSocketEvent);
 }
 
 void loop() {
@@ -71,8 +78,35 @@ void loop() {
   }
   client.loop();
   server.handleClient();
+  webSocketServer.loop();
 
 }
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
+  switch (type) {
+    case WStype_DISCONNECTED:
+      Serial.printf("[%u] Disconnected!\n", num);
+      break;
+    case WStype_CONNECTED:
+      {
+        IPAddress ip = webSocketServer.remoteIP(num);
+        Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\n", num, ip[0], ip[1], ip[2], ip[3], payload);
+      }
+      break;
+    case WStype_TEXT:
+      Serial.printf("[%u] Received text: %s\n", num, payload);
+      // 处理接收到的文本消息
+      TYPE(5);
+      break;
+    case WStype_BIN:
+      Serial.printf("[%u] Received binary data\n", num);
+      // 处理接收到的二进制数据
+      // ...
+      break;
+    default:
+      break;
+  }
+}
+
 void callback(char* topic, byte* payload, unsigned int length) {
   // 处理订阅消息的回调函数
   Serial.print("Message arrived [");
@@ -207,8 +241,8 @@ void handleWIFI() {
     server.send(400, "text/html", "Failed to open config file for writing");
   }
 }
-void TYPE() {
-   int delayTime = atoi(server.arg("time").c_str()); // 获取参数值
+void TYPE(delayTime) {
+   
   digitalWrite(D1, HIGH);
   delay(delayTime);
   digitalWrite(D1, LOW);
