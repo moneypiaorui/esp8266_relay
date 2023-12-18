@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+  <title>ESP8266配网</title>
+  <style>
+    .form{
+        width: 60%;
+        margin: 0 auto;
+        background-color: grey;
+        opacity: 0.6;
+        padding: 10px 10px;
+        text-align: center;
+    }
+    .form .submit{
+        width: 200px;
+    }
+    .buttonContainor{
+        width: 60%;
+        margin: 100px auto;
+        background-color: rgba(55, 123, 123, 0.6);
+        display: flex;
+        flex-wrap: wrap;
+    }
+    .buttonContainor button{
+        margin: 10px 10px;        
+        width: 140px;
+        height: 100px;
+        text-align: center;
+        font-size: 40px;
+    }
+
+  </style>
+</head>
+<body>
+    <div class="form">
+  <h1>ESP8266配网</h1>
+  <form action="/WIFIconfig" method="post">
+    <label for="ssid">WiFi名称：</label>
+    <input type="text" id="ssid" name="ssid" required><br><br>
+    <label for="password">WiFi密码：</label>
+    <input type="password" id="password" name="password"><br><br>
+    <input class="submit" type="submit" value="保存">
+  </form>
+</div>
+  <div class="buttonContainor">
+  <button onclick="location.href='/D1T'">亮度暗</button><br><button onclick="location.href='/D2T'">亮度中</button><br><button onclick="location.href='/D3T'">亮度亮</button><br><button onclick="location.href='/D4T'">电源键</button><br><br><button onclick="location.href='/D5T'">夜光键</button><br><br><button onclick="location.href='/D6T'">D6 switch</button><br>
+</div>
+</body>
+</html>
