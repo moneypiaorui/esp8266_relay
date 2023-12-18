@@ -1,2 +1,2 @@
-python listening.py
+venv\Scripts\python.exe listening.py
 pause

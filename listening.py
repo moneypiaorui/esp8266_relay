@@ -1,5 +1,10 @@
 import keyboard
 import requests
+import websocket
+
+# 创建WebSocket连接
+# ws = websocket.WebSocket()
+# ws.connect("ws://192.168.137.227:81")  # 替换为实际的WebSocket服务器地址
 
 # 定义服务器的URL(写自己的esp8266/32的ip，要在同一个局域网中)
 SERVER_URL = 'http://192.168.137.227/type'
@@ -28,7 +33,7 @@ def on_key(event):
         flag[event.name] = 'up'
 
 keyboard.hook(on_key)
-keyboard.add_hotkey('ctrl+alt+shift', mode_switch)
+keyboard.add_hotkey('ctrl+alt+space', mode_switch)
 
 # 保持程序运行
 keyboard.wait()
