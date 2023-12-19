@@ -1,6 +1,6 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
-#include "esp_http_server.h"
+#include <WebSocketsServer.h>
 #include <PubSubClient.h>
 const int D0 = 16;
 const int D1 = 5;//亮度暗
@@ -12,6 +12,8 @@ const int D5 = 14;//夜光键
 String ssid = "ChainPray";
 String password = "qdd20050629";
 
+int delayTime = 5;
+
 const char* mqttServer = "47.96.132.249";
 const int mqttPort = 1883;
 const char* mqttUser = "admin";
@@ -22,7 +24,7 @@ char* state = "OFF";
 
 String wifi_config_file = "/wifiConfig.txt";
 
-WebSocketsServer webSocketServer(81);
+WebSocketsServer wsServer(81);
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -58,18 +60,24 @@ void setup() {
   Serial.println("WiFi connected");
   Serial.println(WiFi.localIP());
 
-  server.on("/WIFIconfig", handleWIFI(atoi(server.arg("time").c_str())));
+  wsServer.begin();
+  wsServer.onEvent(webSocketEvent);
+  Serial.println("ws server started");
+
+  server.on("/WIFIconfig", handleWIFI);
   server.on("/type", TYPE);
+  server.on("/change", ChangeTime);
   server.onNotFound(handleUserRequet); //处理没有匹配的处理程序的url
   server.begin();
   Serial.println("HTTP server started");
   
   //设置MATT服务
-//  client.setServer(mqttServer, mqttPort);
-//  client.setCallback(callback);
+ client.setServer(mqttServer, mqttPort);
+ client.setCallback(callback);
 
-  webSocketServer.begin();
-  webSocketServer.onEvent(webSocketEvent);
+  
+
+  
 }
 
 void loop() {
@@ -78,7 +86,7 @@ void loop() {
   }
   client.loop();
   server.handleClient();
-  webSocketServer.loop();
+  wsServer.loop();
 
 }
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
@@ -88,14 +96,14 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
       break;
     case WStype_CONNECTED:
       {
-        IPAddress ip = webSocketServer.remoteIP(num);
+        IPAddress ip = wsServer.remoteIP(num);
         Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\n", num, ip[0], ip[1], ip[2], ip[3], payload);
       }
       break;
     case WStype_TEXT:
       Serial.printf("[%u] Received text: %s\n", num, payload);
       // 处理接收到的文本消息
-      TYPE(5);
+      TYPE();
       break;
     case WStype_BIN:
       Serial.printf("[%u] Received binary data\n", num);
@@ -121,13 +129,11 @@ void callback(char* topic, byte* payload, unsigned int length) {
   if (strcmp(topic, topic1) == 0) {
 
     if (strcmp(cmd, "ON") == 0 && strcmp(state, "OFF") == 0) {
-      state = "ON";
-      digitalWrite(0, HIGH);
+      
     } else if (strcmp(cmd, "OFF") == 0 && strcmp(state, "ON") == 0) {
-      state = "OFF";
-      digitalWrite(0, LOW);
+      
     }
-    client.publish("esp01/state", state);
+    client.publish("dimini/state", state);
   } else if (strcmp(topic, topic2) == 0) {
 
   }
@@ -241,8 +247,12 @@ void handleWIFI() {
     server.send(400, "text/html", "Failed to open config file for writing");
   }
 }
-void TYPE(delayTime) {
-   
+void ChangeTime(){
+  Serial.println(atoi(server.arg("time").c_str()));
+  delayTime = atoi(server.arg("time").c_str());
+  server.send(200, "text/html", "succeed to change");
+}
+void TYPE() {
   digitalWrite(D1, HIGH);
   delay(delayTime);
   digitalWrite(D1, LOW);
